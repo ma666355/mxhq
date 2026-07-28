@@ -11,16 +11,18 @@ from hypothesis import strategies as st
 
 from stockradar.core.config import Settings
 from stockradar.data.engine import DataEngine
+from stockradar.data.sources import BaostockDataSource
 
 
 def make_engine_in(tmp_dir: str) -> tuple[DataEngine, Settings]:
-    """创建使用临时数据库的 DataEngine 实例。"""
+    """创建使用临时数据库和 Baostock 数据源的 DataEngine 实例。"""
     settings = Settings(
         db_path=str(Path(tmp_dir) / "test.db"),
         start_date="2024-01-01",
-        feishu_webhook_url="https://example.com/hook",
+        feishu_webhook_url="",
     )
-    engine = DataEngine(settings)
+    source = BaostockDataSource()
+    engine = DataEngine(settings, source)
     return engine, settings
 
 
@@ -32,7 +34,7 @@ def make_engine_in(tmp_dir: str) -> tuple[DataEngine, Settings]:
 @h_settings(max_examples=50, deadline=None)
 def test_unique_symbol_date_constraint(symbol: str, trade_date: date) -> None:
     """相同 (symbol, date) 插入两次，数据库中该组合记录数应保持为 1。"""
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_dir:
         engine, _ = make_engine_in(tmp_dir)
         row = {
             "symbol": symbol, "date": str(trade_date),

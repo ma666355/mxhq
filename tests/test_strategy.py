@@ -10,10 +10,11 @@ from hypothesis import strategies as st
 
 from stockradar.core.config import Settings
 from stockradar.data.engine import DataEngine
+from stockradar.data.sources import BaostockDataSource
 from stockradar.strategy.ma_volume import MaVolumeStrategy
 
 
-# Feature: stockradar-v1, Property 9: 策略 run() 返回值类型正确
+# Property 9: 策略 run() 返回值类型正确
 @given(
     symbols=st.lists(
         st.text(min_size=6, max_size=6, alphabet="0123456789"),
@@ -23,13 +24,14 @@ from stockradar.strategy.ma_volume import MaVolumeStrategy
 @h_settings(max_examples=30, deadline=None)
 def test_strategy_run_returns_list_of_str(symbols: list[str]) -> None:
     """属性 9：run() 应返回 list[str]，每个元素为非空字符串。"""
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_dir:
         settings = Settings(
             db_path=str(Path(tmp_dir) / "test.db"),
             start_date="2024-01-01",
-            feishu_webhook_url="https://example.com/hook",
+            feishu_webhook_url="",
         )
-        engine = DataEngine(settings)
+        source = BaostockDataSource()
+        engine = DataEngine(settings, source)
 
         with patch.object(engine, "get_all_symbols", return_value=symbols):
             with patch.object(engine, "get_ohlcv", return_value=pd.DataFrame()):
