@@ -1,10 +1,10 @@
 """数据源模块：支持 baostock / tushare / akshare / wind 多数据源接入。"""
 
-from sequoia_x.data.sources.base import BaseDataSource
-from sequoia_x.data.sources.baostock_source import BaostockDataSource
-from sequoia_x.data.sources.tushare_source import TushareDataSource
-from sequoia_x.data.sources.akshare_source import AkShareDataSource
-from sequoia_x.data.sources.wind_source import WindDataSource
+from stockradar.data.sources.base import BaseDataSource
+from stockradar.data.sources.baostock_source import BaostockDataSource
+from stockradar.data.sources.tushare_source import TushareDataSource
+from stockradar.data.sources.akshare_source import AkShareDataSource
+from stockradar.data.sources.wind_source import WindDataSource
 
 __all__ = [
     "BaseDataSource",

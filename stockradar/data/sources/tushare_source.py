@@ -10,8 +10,8 @@ import time
 
 import pandas as pd
 
-from sequoia_x.core.logger import get_logger
-from sequoia_x.data.sources.base import BaseDataSource
+from stockradar.core.logger import get_logger
+from stockradar.data.sources.base import BaseDataSource
 
 logger = get_logger(__name__)
 

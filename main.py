@@ -1,4 +1,4 @@
-"""Sequoia-X V2 主程序入口。
+"""StockRadar V2 主程序入口。
 
 支持多数据源（baostock / tushare / akshare / wind），通过 .env 中 DATA_SOURCE 切换。
 
@@ -17,23 +17,23 @@ load_dotenv()
 
 socket.setdefaulttimeout(10.0)
 
-from sequoia_x.core.config import get_settings
-from sequoia_x.core.logger import get_logger
-from sequoia_x.data.engine import DataEngine
-from sequoia_x.data.sources import get_data_source
-from sequoia_x.notify.feishu import FeishuNotifier
-from sequoia_x.strategy.base import BaseStrategy
-from sequoia_x.strategy.high_tight_flag import HighTightFlagStrategy
-from sequoia_x.strategy.limit_up_shakeout import LimitUpShakeoutStrategy
-from sequoia_x.strategy.ma_volume import MaVolumeStrategy
-from sequoia_x.strategy.turtle_trade import TurtleTradeStrategy
-from sequoia_x.strategy.uptrend_limit_down import UptrendLimitDownStrategy
-from sequoia_x.strategy.rps_breakout import RpsBreakoutStrategy
-from sequoia_x.strategy.private_placement import PrivatePlacementStrategy
+from stockradar.core.config import get_settings
+from stockradar.core.logger import get_logger
+from stockradar.data.engine import DataEngine
+from stockradar.data.sources import get_data_source
+from stockradar.notify.feishu import FeishuNotifier
+from stockradar.strategy.base import BaseStrategy
+from stockradar.strategy.high_tight_flag import HighTightFlagStrategy
+from stockradar.strategy.limit_up_shakeout import LimitUpShakeoutStrategy
+from stockradar.strategy.ma_volume import MaVolumeStrategy
+from stockradar.strategy.turtle_trade import TurtleTradeStrategy
+from stockradar.strategy.uptrend_limit_down import UptrendLimitDownStrategy
+from stockradar.strategy.rps_breakout import RpsBreakoutStrategy
+from stockradar.strategy.private_placement import PrivatePlacementStrategy
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Sequoia-X V2 选股系统")
+    parser = argparse.ArgumentParser(description="StockRadar V2 选股系统")
     parser.add_argument(
         "--backfill",
         action="store_true",
@@ -54,7 +54,7 @@ def main() -> None:
 
         # 2. 初始化日志
         logger = get_logger(__name__)
-        logger.info("Sequoia-X V2 启动")
+        logger.info("StockRadar V2 启动")
 
         # 3. 初始化数据源
         source_name = args.source or settings.data_source
@@ -72,7 +72,7 @@ def main() -> None:
             logger.info("进入回填模式...")
             all_symbols = engine.get_all_symbols()
             engine.backfill(all_symbols)
-            logger.info("Sequoia-X V2 回填模式运行完成")
+            logger.info("StockRadar V2 回填模式运行完成")
             return
 
         # ── 日常模式 ──
@@ -120,7 +120,7 @@ def main() -> None:
             traceback.print_exc()
         sys.exit(1)
 
-    logger.info("Sequoia-X V2 运行完成")
+    logger.info("StockRadar V2 运行完成")
 
 
 if __name__ == "__main__":

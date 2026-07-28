@@ -11,7 +11,7 @@ from hypothesis import strategies as st
 import main as main_module
 
 
-# Feature: sequoia-x-v2, Property 13: 主程序异常以非零退出码终止
+# Feature: stockradar-v1, Property 13: 主程序异常以非零退出码终止
 @given(error_msg=st.text(min_size=1, max_size=100))
 @h_settings(max_examples=30, deadline=None)
 def test_main_exits_nonzero_on_exception(error_msg: str) -> None:

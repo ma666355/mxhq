@@ -1,7 +1,7 @@
 import pandas as pd
 import sqlite3
-from sequoia_x.strategy.base import BaseStrategy
-from sequoia_x.core.logger import get_logger
+from stockradar.strategy.base import BaseStrategy
+from stockradar.core.logger import get_logger
 
 logger = get_logger(__name__)
 

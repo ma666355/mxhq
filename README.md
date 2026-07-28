@@ -1,4 +1,4 @@
-# Sequoia-X: 王者回归 | The King Returns
+# StockRadar: 王者回归 | The King Returns
 
 > A 股量化选股系统 V2 | A-Share Quantitative Stock Selection System V2
 
@@ -6,7 +6,7 @@
 
 ## 简介 | Introduction
 
-Sequoia-X V2 是面向 A 股市场的量化选股系统，基于现代 Python 工程化标准从零重构。
+StockRadar V2 是面向 A 股市场的量化选股系统，基于现代 Python 工程化标准从零重构。
 系统以 OOP 架构、向量化计算和增量数据更新为核心设计原则，每日收盘后自动选股并推送至飞书群。
 
 **V2.1 新增：多数据源抽象层**，支持 baostock / tushare / akshare / wind 一键切换，
@@ -116,7 +116,7 @@ mxhq/
 ├── pyproject.toml                    # 依赖声明 + 可选 tushare 依赖
 ├── .env.example                      # 环境变量模板
 ├── data/                             # SQLite 数据库（运行时生成，不入 git）
-├── sequoia_x/
+├── stockradar/
 │   ├── core/
 │   │   ├── config.py                 # Pydantic-settings 配置管理
 │   │   └── logger.py                 # rich 结构化日志
@@ -149,7 +149,7 @@ mxhq/
 所有数据源继承 `BaseDataSource`，只需实现 6 个方法：
 
 ```python
-from sequoia_x.data.sources.base import BaseDataSource
+from stockradar.data.sources.base import BaseDataSource
 
 class MyDataSource(BaseDataSource):
     name = "my_source"
@@ -162,7 +162,7 @@ class MyDataSource(BaseDataSource):
     def get_stock_names(self, symbols) -> dict[str, str]: ...
 ```
 
-然后在 `sequoia_x/data/sources/__init__.py` 的 registry 中注册即可使用。
+然后在 `stockradar/data/sources/__init__.py` 的 registry 中注册即可使用。
 
 ---
 
@@ -170,7 +170,7 @@ class MyDataSource(BaseDataSource):
 
 - **数据格式**：日 K 线（open / high / low / close / volume / turnover）
 - **复权方式**：后复权（hfq）— 历史价格不变，适合增量存储
-- **存储**：本地 SQLite（`data/sequoia_v2.db`），可直接拷贝到其他机器使用
+- **存储**：本地 SQLite（`data/stockradar.db`），可直接拷贝到其他机器使用
 - **增量机制**：首次 `--backfill` 全量灌入，日常 `main.py` 增量补最新交易日
 
 ---

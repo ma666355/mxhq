@@ -2,8 +2,8 @@
 
 from abc import ABC, abstractmethod
 
-from sequoia_x.core.config import Settings
-from sequoia_x.data.engine import DataEngine
+from stockradar.core.config import Settings
+from stockradar.data.engine import DataEngine
 
 
 class BaseStrategy(ABC):

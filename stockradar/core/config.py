@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     """Tushare API token（仅 data_source=tushare 时需要）"""
 
     # ── 数据库配置 ──
-    db_path: str = "data/sequoia_v2.db"
+    db_path: str = "data/stockradar.db"
     start_date: str = "2024-01-01"
 
     # ── 通知配置 ──

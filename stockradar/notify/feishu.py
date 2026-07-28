@@ -5,9 +5,9 @@ from datetime import date
 
 import requests
 
-from sequoia_x.core.config import Settings
-from sequoia_x.core.logger import get_logger
-from sequoia_x.data.sources.base import BaseDataSource
+from stockradar.core.config import Settings
+from stockradar.core.logger import get_logger
+from stockradar.data.sources.base import BaseDataSource
 
 logger = get_logger(__name__)
 
@@ -59,7 +59,7 @@ class FeishuNotifier:
                 "header": {
                     "title": {
                         "tag": "plain_text",
-                        "content": f"📈 Sequoia-X 选股播报 | {strategy_name}",
+                        "content": f"📈 StockRadar 选股播报 | {strategy_name}",
                     },
                     "template": "blue",
                 },

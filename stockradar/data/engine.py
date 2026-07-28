@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from sequoia_x.core.config import Settings
-from sequoia_x.core.logger import get_logger
-from sequoia_x.data.sources.base import BaseDataSource
+from stockradar.core.config import Settings
+from stockradar.core.logger import get_logger
+from stockradar.data.sources.base import BaseDataSource
 
 logger = get_logger(__name__)
 
@@ -42,7 +42,7 @@ class DataEngine:
     """行情数据引擎，负责 SQLite 存储和多数据源数据同步。
 
     使用方式：
-        from sequoia_x.data.sources import get_data_source
+        from stockradar.data.sources import get_data_source
         source = get_data_source('akshare')
         engine = DataEngine(settings, source)
     """

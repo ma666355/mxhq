@@ -8,12 +8,12 @@ import pandas as pd
 from hypothesis import given, settings as h_settings
 from hypothesis import strategies as st
 
-from sequoia_x.core.config import Settings
-from sequoia_x.data.engine import DataEngine
-from sequoia_x.strategy.ma_volume import MaVolumeStrategy
+from stockradar.core.config import Settings
+from stockradar.data.engine import DataEngine
+from stockradar.strategy.ma_volume import MaVolumeStrategy
 
 
-# Feature: sequoia-x-v2, Property 9: 策略 run() 返回值类型正确
+# Feature: stockradar-v1, Property 9: 策略 run() 返回值类型正确
 @given(
     symbols=st.lists(
         st.text(min_size=6, max_size=6, alphabet="0123456789"),
