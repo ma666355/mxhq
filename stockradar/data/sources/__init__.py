@@ -39,4 +39,8 @@ def get_data_source(name: str, **kwargs) -> BaseDataSource:
         raise ValueError(
             f"未知数据源: {name}，支持: {', '.join(registry.keys())}"
         )
-    return registry[name_lower](**kwargs)
+    # 仅 tushare 接受 token，其他数据源过滤掉无关参数
+    cls = registry[name_lower]
+    if name_lower != "tushare":
+        kwargs.pop("token", None)
+    return cls(**kwargs)
