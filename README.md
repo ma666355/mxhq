@@ -1,15 +1,15 @@
-# StockRadar: 王者回归 | The King Returns
+# StockRadar(股市雷达）
 
-> A 股量化选股系统 V2 | A-Share Quantitative Stock Selection System V2
+> A 股量化选股系统 | A-Share Quantitative Stock Selection System
 
 ---
 
 ## 简介 | Introduction
 
-StockRadar V2 是面向 A 股市场的量化选股系统，基于现代 Python 工程化标准从零重构。
+StockRadar是面向 A 股市场的量化选股系统，基于现代 Python 工程化标准从零重构。
 系统以 OOP 架构、向量化计算和增量数据更新为核心设计原则，每日收盘后自动选股并推送至飞书群。
 
-**V2.1 新增：多数据源抽象层**，支持 baostock / tushare / akshare / wind 一键切换，
+**多数据源抽象层**，支持 baostock / tushare / akshare / wind 一键切换，
 一行配置即可更换底层数据引擎，不修改任何策略代码。
 
 ---
