@@ -1,0 +1,35 @@
+[project]
+name = "sequoia-x"
+version = "2.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "akshare>=1.10",
+    "baostock>=0.9",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+    "rich>=13.0",
+    "pandas>=2.0",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "hypothesis>=6.100",
+    "pytest-mock>=3.12",
+]
+tushare = [
+    "tushare>=1.4",
+]
+wind = [
+    # WindPy 需要从 Wind 终端本地安装，无法通过 PyPI 获取
+    # 安装方法：在 Wind 终端命令行执行 `windpy` 启动 Python 接口
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
