@@ -1,4 +1,4 @@
-"""StockRadar V2 主程序入口。
+"""StockRadar 主程序入口。
 
 支持多数据源（baostock / tushare / akshare / wind），通过 .env 中 DATA_SOURCE 切换。
 
@@ -26,7 +26,7 @@ from stockradar.strategy import discover_strategies
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="StockRadar V2 选股系统")
+    parser = argparse.ArgumentParser(description="StockRadar 选股系统")
     parser.add_argument(
         "--backfill",
         action="store_true",
@@ -47,7 +47,7 @@ def main() -> None:
 
         # 2. 初始化日志
         logger = get_logger(__name__)
-        logger.info("StockRadar V2 启动")
+        logger.info("StockRadar 启动")
 
         # 3. 初始化数据源
         source_name = args.source or settings.data_source
@@ -65,7 +65,7 @@ def main() -> None:
             logger.info("进入回填模式...")
             all_symbols = engine.get_all_symbols()
             engine.backfill(all_symbols)
-            logger.info("StockRadar V2 回填模式运行完成")
+            logger.info("StockRadar 回填模式运行完成")
             return
 
         # ── 日常模式 ──
@@ -110,7 +110,7 @@ def main() -> None:
             traceback.print_exc()
         sys.exit(1)
 
-    logger.info("StockRadar V2 运行完成")
+    logger.info("StockRadar 运行完成")
 
 
 if __name__ == "__main__":
