@@ -5,3 +5,4 @@ python-dotenv>=1.0
 rich>=13.0
 pandas>=2.0
 requests>=2.31
+tqdm>=4.66

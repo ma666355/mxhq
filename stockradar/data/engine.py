@@ -10,6 +10,7 @@ from multiprocessing import Pool
 from pathlib import Path
 
 import pandas as pd
+from tqdm import tqdm
 
 from stockradar.core.config import Settings
 from stockradar.core.logger import get_logger
@@ -58,10 +59,12 @@ class DataEngine:
     def _init_db(self) -> None:
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(self.db_path) as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
             conn.execute(_CREATE_TABLE_SQL)
             conn.execute(_CREATE_INDEX_SQL)
             conn.commit()
-        logger.info(f"数据库初始化完成：{self.db_path}（数据源: {self.source.name}）")
+        logger.info(f"数据库初始化完成：{self.db_path}（数据源: {self.source.name}，WAL 模式）")
 
     # ── 数据读取 ──
 
@@ -184,9 +187,24 @@ class DataEngine:
         - 单只股票失败自动重试 3 次，间隔递增（2s/4s/8s）
         - 已入库的自动 skip，中断后可重跑续传
         - 非 baostock 数据源串行拉取，自动控制频次
+        - tqdm 实时进度条，百分比 + 速率
         """
         today_str = date.today().strftime("%Y-%m-%d")
         max_retries = 3
+        total = len(symbols)
+
+        # ---- 续传状态预检 ----
+        already_done = 0
+        for symbol in symbols:
+            last_date = self._get_last_date(symbol)
+            if last_date and last_date >= today_str:
+                already_done += 1
+        if already_done > 0:
+            pct = already_done / total * 100
+            logger.info(
+                f"续传模式：{already_done}/{total} ({pct:.1f}%) 已完成，"
+                f"剩余 {total - already_done} 只需更新"
+            )
 
         # 连接数据源（baostock 特殊处理：需在循环外 maintain 一个长连接）
         is_baostock = self.source.name == "baostock"
@@ -198,15 +216,20 @@ class DataEngine:
         failed = 0
 
         try:
-            for i, symbol in enumerate(symbols):
+            pbar = tqdm(
+                symbols,
+                desc="回填进度",
+                unit="只",
+                ncols=100,
+                smoothing=0.1,
+            )
+            for i, symbol in enumerate(pbar):
                 last_date = self._get_last_date(symbol)
                 if last_date and last_date >= today_str:
                     skipped += 1
-                    if (i + 1) % 500 == 0:
-                        logger.info(
-                            f"已处理 {i + 1}/{len(symbols)}，"
-                            f"成功 {success} 跳过 {skipped} 失败 {failed}"
-                        )
+                    pbar.set_postfix({
+                        "成功": success, "跳过": skipped, "失败": failed,
+                    })
                     continue
 
                 start = last_date or self.start_date
@@ -226,7 +249,7 @@ class DataEngine:
                     except Exception as exc:
                         if attempt < max_retries - 1:
                             wait = 2 ** (attempt + 1)
-                            logger.warning(
+                            pbar.write(
                                 f"[{symbol}] 第{attempt + 1}次失败: {exc}，"
                                 f"{wait}s 后重试"
                             )
@@ -236,16 +259,22 @@ class DataEngine:
                                 time.sleep(1)
                                 self.source.connect()
                         else:
-                            logger.warning(
+                            pbar.write(
                                 f"[{symbol}] {max_retries}次重试均失败，跳过"
                             )
 
                 if not fetch_ok:
                     failed += 1
+                    pbar.set_postfix({
+                        "成功": success, "跳过": skipped, "失败": failed,
+                    })
                     continue
 
                 if df.empty:
                     skipped += 1
+                    pbar.set_postfix({
+                        "成功": success, "跳过": skipped, "失败": failed,
+                    })
                     continue
 
                 # 写入数据库
@@ -259,12 +288,9 @@ class DataEngine:
                     pass
 
                 success += 1
-
-                if (i + 1) % 500 == 0:
-                    logger.info(
-                        f"已处理 {i + 1}/{len(symbols)}，"
-                        f"成功 {success} 跳过 {skipped} 失败 {failed}"
-                    )
+                pbar.set_postfix({
+                    "成功": success, "跳过": skipped, "失败": failed,
+                })
 
                 # 非 baostock 数据源：控制拉取频次
                 if not is_baostock and self.source.name in ("tushare", "akshare"):

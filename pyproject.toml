@@ -1,6 +1,6 @@
 [project]
 name = "stockradar"
-version = "2.1.0"
+version = "2.2.0"
 requires-python = ">=3.10"
 dependencies = [
     "akshare>=1.10",
@@ -10,6 +10,7 @@ dependencies = [
     "rich>=13.0",
     "pandas>=2.0",
     "requests>=2.31",
+    "tqdm>=4.66",
 ]
 
 [project.optional-dependencies]
@@ -17,13 +18,14 @@ dev = [
     "pytest>=8.0",
     "hypothesis>=6.100",
     "pytest-mock>=3.12",
+    "mypy>=1.0",
+    "ruff>=0.1",
 ]
 tushare = [
     "tushare>=1.4",
 ]
 wind = [
     # WindPy 需要从 Wind 终端本地安装，无法通过 PyPI 获取
-    # 安装方法：在 Wind 终端命令行执行 `windpy` 启动 Python 接口
 ]
 
 [tool.ruff]
@@ -31,5 +33,30 @@ line-length = 100
 target-version = "py311"
 select = ["E", "F", "I", "UP"]
 
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_return_any = false
+warn_unused_configs = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# ── StockRadar 策略参数 ──
+# 各策略在此调整阈值，运行时自动读取
+[tool.stockradar.strategy.turtle]
+min_turnover = 100_000_000    # 最低成交额（亿级过滤）
+window = 20                    # 突破窗口（交易日）
+
+[tool.stockradar.strategy.ma_volume]
+ma_short = 5                   # 短期均线
+ma_long = 20                   # 长期均线
+volume_ratio = 1.5             # 放量倍数
+
+[tool.stockradar.strategy.high_tight_flag]
+flag_days = 10                 # 旗形整理天数
+tight_ratio = 0.3              # 振幅收缩比例
+
+[tool.stockradar.strategy.rps_breakout]
+rps_period = 120               # RPS 计算周期
+rps_threshold = 85             # RPS 强度阈值

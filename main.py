@@ -22,14 +22,7 @@ from stockradar.core.logger import get_logger
 from stockradar.data.engine import DataEngine
 from stockradar.data.sources import get_data_source
 from stockradar.notify.feishu import FeishuNotifier
-from stockradar.strategy.base import BaseStrategy
-from stockradar.strategy.high_tight_flag import HighTightFlagStrategy
-from stockradar.strategy.limit_up_shakeout import LimitUpShakeoutStrategy
-from stockradar.strategy.ma_volume import MaVolumeStrategy
-from stockradar.strategy.turtle_trade import TurtleTradeStrategy
-from stockradar.strategy.uptrend_limit_down import UptrendLimitDownStrategy
-from stockradar.strategy.rps_breakout import RpsBreakoutStrategy
-from stockradar.strategy.private_placement import PrivatePlacementStrategy
+from stockradar.strategy import discover_strategies
 
 
 def main() -> None:
@@ -80,15 +73,12 @@ def main() -> None:
         count = engine.sync_today_bulk()
         logger.info(f"快照同步完成，写入 {count} 只股票")
 
-        # 5. 策略列表（新增策略在此追加即可）
-        strategies: list[BaseStrategy] = [
-            MaVolumeStrategy(engine=engine, settings=settings),
-            TurtleTradeStrategy(engine=engine, settings=settings),
-            HighTightFlagStrategy(engine=engine, settings=settings),
-            LimitUpShakeoutStrategy(engine=engine, settings=settings),
-            UptrendLimitDownStrategy(engine=engine, settings=settings),
-            RpsBreakoutStrategy(engine=engine, settings=settings),
-            PrivatePlacementStrategy(engine=engine, settings=settings),
+        # 5. 自动发现策略（新增策略无需改 main.py，丢文件即可）
+        strategy_classes = discover_strategies()
+        logger.info(f"发现 {len(strategy_classes)} 个策略")
+        strategies = [
+            cls(engine=engine, settings=settings)
+            for cls in strategy_classes
         ]
 
         notifier = FeishuNotifier(settings, data_source)

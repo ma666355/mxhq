@@ -3,12 +3,29 @@
 官网：http://baostock.com
 """
 
+import os
+import sys
+from contextlib import contextmanager
+
 import pandas as pd
 
 from stockradar.core.logger import get_logger
 from stockradar.data.sources.base import BaseDataSource
 
 logger = get_logger(__name__)
+
+
+@contextmanager
+def _quiet_baostock():
+    """抑制 baostock 内置 print 输出（login/logout success 刷屏）。"""
+    devnull = open(os.devnull, "w")
+    old_stdout = sys.stdout
+    sys.stdout = devnull
+    try:
+        yield
+    finally:
+        sys.stdout = old_stdout
+        devnull.close()
 
 
 class BaostockDataSource(BaseDataSource):
@@ -30,17 +47,21 @@ class BaostockDataSource(BaseDataSource):
 
     def connect(self) -> bool:
         import baostock as bs
-        lg = bs.login()
+        with _quiet_baostock():
+            lg = bs.login()
         if lg.error_code != "0":
             logger.error(f"baostock 登录失败: {lg.error_msg}")
             return False
         self._logged_in = True
+        logger.debug("baostock 连接成功")
         return True
 
     def disconnect(self) -> None:
         import baostock as bs
-        bs.logout()
+        with _quiet_baostock():
+            bs.logout()
         self._logged_in = False
+        logger.debug("baostock 连接已断开")
 
     # ── 符号转换 ──
 
