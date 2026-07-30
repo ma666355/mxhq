@@ -11,6 +11,8 @@ Wind 是商业金融数据终端，提供全面的 A 股、港股、期货、宏
 
 from __future__ import annotations
 
+from typing import Any
+
 import pandas as pd
 
 from stockradar.core.logger import get_logger
@@ -39,7 +41,7 @@ class WindDataSource(BaseDataSource):
     name: str = "wind"
 
     def __init__(self) -> None:
-        self._w = None
+        self._w: Any = None
 
     # ── 连接管理 ──
 

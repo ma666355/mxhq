@@ -1,7 +1,5 @@
 """高旗形整理策略：强动量后极度收敛缩量。"""
 
-import pandas as pd
-
 from stockradar.core.logger import get_logger
 from stockradar.strategy.base import BaseStrategy
 
@@ -21,7 +19,7 @@ class HighTightFlagStrategy(BaseStrategy):
     """
 
     webhook_key: str = "flag"
-    _MIN_BARS: int = 40  # 至少需要 40 根 K 线
+    config_key: str = "high_tight_flag"
 
     def run(self) -> list[str]:
         """
@@ -32,34 +30,42 @@ class HighTightFlagStrategy(BaseStrategy):
         """
         symbols = self.engine.get_local_symbols()
         selected: list[str] = []
+        momentum_days = self.param_int("momentum_days", 40)
+        momentum_ratio = self.param_float("momentum_ratio", 0.6)
+        flag_days = self.param_int("flag_days", 10)
+        tight_ratio = self.param_float("tight_ratio", 0.15)
+        high_level_ratio = self.param_float("high_level_ratio", 0.8)
+        volume_window = self.param_int("volume_window", 20)
+        volume_ratio = self.param_float("volume_ratio", 0.6)
+        min_bars = max(momentum_days, flag_days, volume_window + 1)
 
         for symbol in symbols:
             try:
                 df = self.engine.get_ohlcv(symbol)
-                if len(df) < self._MIN_BARS:
+                if len(df) < min_bars:
                     continue
 
                 # 向量化计算各窗口指标
-                tail40 = df.tail(40)
-                tail10 = df.tail(10)
+                momentum_window = df.tail(momentum_days)
+                flag_window = df.tail(flag_days)
 
-                high40 = tail40["high"].max()
-                low40 = tail40["low"].min()
-                high10 = tail10["high"].max()
-                low10 = tail10["low"].min()
+                momentum_high = momentum_window["high"].max()
+                momentum_low = momentum_window["low"].min()
+                flag_high = flag_window["high"].max()
+                flag_low = flag_window["low"].min()
 
-                if low40 == 0 or low10 == 0:
+                if momentum_low == 0 or flag_low == 0:
                     continue
 
                 # 条件 1：强动量
-                momentum = high40 / low40 > 1.6
+                momentum = momentum_high / momentum_low - 1 > momentum_ratio
                 # 条件 2：极度收敛
-                consolidation = high10 / low10 < 1.15
-                # 条件 3：高位抗跌（近10天最低点不得低于40天最高点的80%）
-                high_level = low10 >= high40 * 0.8
+                consolidation = flag_high / flag_low - 1 < tight_ratio
+                # 条件 3：高位抗跌
+                high_level = flag_low >= momentum_high * high_level_ratio
                 # 条件 4：缩量（向量化均值）
-                vol_ma20 = df["volume"].iloc[-21:-1].mean()
-                shrink = df["volume"].iloc[-1] < vol_ma20 * 0.6
+                historical_volume = df["volume"].iloc[-volume_window - 1:-1].mean()
+                shrink = df["volume"].iloc[-1] < historical_volume * volume_ratio
 
                 if momentum and consolidation and high_level and shrink:
                     selected.append(symbol)

@@ -18,6 +18,7 @@ class BaseStrategy(ABC):
     """
 
     webhook_key: str = "default"
+    config_key: str = ""
 
     def __init__(self, engine: DataEngine, settings: Settings) -> None:
         """
@@ -29,6 +30,16 @@ class BaseStrategy(ABC):
         """
         self.engine = engine
         self.settings = settings
+
+    def param_int(self, key: str, default: int) -> int:
+        """读取整数策略参数。"""
+        section = self.config_key or self.webhook_key
+        return int(self.settings.get_strategy_value(section, key, default))
+
+    def param_float(self, key: str, default: float) -> float:
+        """读取浮点策略参数。"""
+        section = self.config_key or self.webhook_key
+        return float(self.settings.get_strategy_value(section, key, default))
 
     @abstractmethod
     def run(self) -> list[str]:

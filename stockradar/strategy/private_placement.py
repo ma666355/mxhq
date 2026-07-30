@@ -21,7 +21,6 @@ class PrivatePlacementStrategy(BaseStrategy):
     """
 
     webhook_key: str = "private_placement"
-    _LOOKBACK_DAYS: int = 7  # 回看天数，覆盖一周内的新公告
 
     def run(self) -> list[str]:
         """拉取定增公告，返回近期有定向增发的股票代码列表。"""
@@ -45,7 +44,8 @@ class PrivatePlacementStrategy(BaseStrategy):
 
         # 按发行日期过滤：只保留最近 N 天内的公告
         today = date.today()
-        cutoff = today - timedelta(days=self._LOOKBACK_DAYS)
+        lookback_days = self.param_int("lookback_days", 7)
+        cutoff = today - timedelta(days=lookback_days)
 
         df["发行日期"] = pd.to_datetime(df["发行日期"], errors="coerce")
         df = df.dropna(subset=["发行日期"])

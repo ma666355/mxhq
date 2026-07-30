@@ -1,7 +1,5 @@
 """均线+成交量选股策略：5日均线上穿20日均线且成交量放大。"""
 
-import pandas as pd
-
 from stockradar.core.logger import get_logger
 from stockradar.strategy.base import BaseStrategy
 
@@ -30,27 +28,30 @@ class MaVolumeStrategy(BaseStrategy):
         """
         symbols = self.engine.get_local_symbols()
         selected: list[str] = []
+        ma_short = self.param_int("ma_short", 5)
+        ma_long = self.param_int("ma_long", 20)
+        volume_ratio = self.param_float("volume_ratio", 1.5)
 
         for symbol in symbols:
             try:
                 df = self.engine.get_ohlcv(symbol)
-                if len(df) < 20:
+                if len(df) < ma_long + 1:
                     continue
 
                 # 向量化计算均线和成交量均值
-                df["ma5"] = df["close"].rolling(5).mean()
-                df["ma20"] = df["close"].rolling(20).mean()
-                df["vol_ma20"] = df["volume"].rolling(20).mean()
+                df["ma_short"] = df["close"].rolling(ma_short).mean()
+                df["ma_long"] = df["close"].rolling(ma_long).mean()
+                df["vol_ma"] = df["volume"].rolling(ma_long).mean()
 
                 # 取最后两行判断金叉（昨日 ma5 < ma20，今日 ma5 > ma20）
                 last = df.iloc[-1]
                 prev = df.iloc[-2]
 
                 golden_cross = (
-                    prev["ma5"] < prev["ma20"]
-                    and last["ma5"] > last["ma20"]
+                    prev["ma_short"] < prev["ma_long"]
+                    and last["ma_short"] > last["ma_long"]
                 )
-                volume_surge = last["volume"] > last["vol_ma20"] * 1.5
+                volume_surge = last["volume"] > last["vol_ma"] * volume_ratio
 
                 if golden_cross and volume_surge:
                     selected.append(symbol)

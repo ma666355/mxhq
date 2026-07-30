@@ -1,6 +1,8 @@
 """配置管理属性测试。"""
 
 import os
+from pathlib import Path
+
 import pytest
 from hypothesis import given, settings as h_settings, HealthCheck
 from hypothesis import strategies as st
@@ -45,3 +47,22 @@ def test_feishu_webhook_url_defaults_to_empty() -> None:
     finally:
         if env_backup is not None:
             os.environ["FEISHU_WEBHOOK_URL"] = env_backup
+
+
+def test_strategy_parameters_are_loaded_from_pyproject(tmp_path: Path) -> None:
+    """策略参数应从 pyproject.toml 的对应区段加载。"""
+    config_path = tmp_path / "pyproject.toml"
+    config_path.write_text(
+        """
+[tool.stockradar.strategy.rps_breakout]
+rps_period = 60
+rps_threshold = 88
+""".strip(),
+        encoding="utf-8",
+    )
+
+    from stockradar.core.config import Settings
+
+    settings = Settings(strategy_config_path=str(config_path))
+    assert settings.get_strategy_value("rps_breakout", "rps_period", 120) == 60
+    assert settings.get_strategy_value("rps_breakout", "rps_threshold", 90) == 88

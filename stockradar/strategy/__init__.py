@@ -7,18 +7,17 @@
 import importlib
 import pkgutil
 from pathlib import Path
-from typing import Type
 
 from stockradar.strategy.base import BaseStrategy
 
 
-def discover_strategies() -> list[Type[BaseStrategy]]:
+def discover_strategies() -> list[type[BaseStrategy]]:
     """自动扫描 strategy/ 下所有模块，发现 BaseStrategy 子类。
 
     Returns:
         BaseStrategy 子类列表（可直接用 engine + settings 实例化）。
     """
-    classes: list[Type[BaseStrategy]] = []
+    classes: list[type[BaseStrategy]] = []
     package_dir = Path(__file__).parent
 
     for module_info in pkgutil.iter_modules([str(package_dir)]):

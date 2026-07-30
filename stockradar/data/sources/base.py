@@ -14,6 +14,7 @@ class BaseDataSource(ABC):
     设计原则：
     - 统一输入：股票代码统一为纯数字字符串（如 '000001'、'600519'）
     - 统一输出：DataFrame 列名统一为 [symbol, date, open, high, low, close, volume, turnover]
+    - 统一单位：volume 使用股，turnover 使用人民币元
     - 复权方式：各数据源内部实现自行保证，默认采用后复权
     """
 

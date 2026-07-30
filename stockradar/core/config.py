@@ -1,5 +1,8 @@
 """配置管理模块：通过 pydantic-settings 从环境变量或 .env 文件加载系统配置。"""
 
+from pathlib import Path
+
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,7 +23,9 @@ class Settings(BaseSettings):
     feishu_webhook_url: str = ""
     """默认飞书 Webhook URL（data_source=tushare/akshare 时可不填）"""
 
-    strategy_webhooks: dict[str, str] = {}
+    strategy_webhooks: dict[str, str] = Field(default_factory=dict)
+    strategy_config: dict[str, dict[str, int | float]] = Field(default_factory=dict)
+    strategy_config_path: str = "pyproject.toml"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -42,6 +47,38 @@ class Settings(BaseSettings):
 
         object.__setattr__(self, "strategy_webhooks", webhooks)
 
+        config_path = Path(self.strategy_config_path)
+        file_config: dict[str, dict[str, int | float]] = {}
+        if config_path.is_file():
+            try:
+                import tomllib
+            except ImportError:  # pragma: no cover - Python 3.10
+                import tomli as tomllib
+
+            document = tomllib.loads(config_path.read_text(encoding="utf-8"))
+            raw_config = (
+                document.get("tool", {})
+                .get("stockradar", {})
+                .get("strategy", {})
+            )
+            if isinstance(raw_config, dict):
+                for strategy_name, values in raw_config.items():
+                    if not isinstance(values, dict):
+                        continue
+                    file_config[str(strategy_name)] = {
+                        str(key): value
+                        for key, value in values.items()
+                        if isinstance(value, (int, float))
+                    }
+
+        merged_config = {
+            name: dict(values)
+            for name, values in file_config.items()
+        }
+        for strategy_name, values in self.strategy_config.items():
+            merged_config.setdefault(strategy_name, {}).update(values)
+        object.__setattr__(self, "strategy_config", merged_config)
+
     def get_webhook_url(self, webhook_key: str) -> str:
         """根据 webhook_key 返回对应的 Webhook URL。
 
@@ -56,6 +93,15 @@ class Settings(BaseSettings):
         return self.strategy_webhooks.get(
             webhook_key.lower(), self.feishu_webhook_url
         )
+
+    def get_strategy_value(
+        self,
+        strategy_name: str,
+        key: str,
+        default: int | float,
+    ) -> int | float:
+        """读取策略参数；未配置时返回代码提供的默认值。"""
+        return self.strategy_config.get(strategy_name, {}).get(key, default)
 
 
 _settings: Settings | None = None

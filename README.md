@@ -51,13 +51,16 @@ python main.py --source akshare  # 指定数据源运行
 
 | 策略 | 说明 |
 |---|---|
-| **TurtleTrade** | 海龟突破：20日新高 + 成交额过亿 + 阳线防诱多，按流通市值排序 |
+| **TurtleTrade** | 海龟突破：20日新高 + 成交额过亿 + 阳线防诱多，按成交额排序 |
 | **MaVolume** | 均线+放量突破 |
 | **HighTightFlag** | 高而窄的旗形整理突破 |
 | **LimitUpShakeout** | 涨停洗盘回踩确认 |
 | **UptrendLimitDown** | 上升趋势中的跌停反包 |
 | **RpsBreakout** | 欧奈尔 RPS 相对强度突破 |
 | **PrivatePlacement** | 私募增持跟踪 |
+
+策略窗口、阈值和放量倍数统一配置在 `pyproject.toml` 的
+`[tool.stockradar.strategy.*]` 区段，启动时自动加载；代码默认值仅在配置缺失时使用。
 
 ---
 
@@ -171,6 +174,7 @@ class MyDataSource(BaseDataSource):
 ## 数据说明
 
 - **数据格式**：日 K 线（open / high / low / close / volume / turnover）
+- **统一单位**：volume=股，turnover=人民币元；数据源适配层负责换算
 - **复权方式**：后复权（hfq）— 历史价格不变，适合增量存储
 - **存储**：本地 SQLite（`data/stockradar.db`），可直接拷贝到其他机器使用
 - **增量机制**：首次 `--backfill` 全量灌入，日常 `main.py` 增量补最新交易日

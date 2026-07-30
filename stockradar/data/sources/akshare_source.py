@@ -84,11 +84,11 @@ class AkShareDataSource(BaseDataSource):
 
         # 复权方式映射
         adjust_map = {
-            "1": "qfq",   # 后复权
-            "2": "qfg",   # 前复权
+            "1": "hfq",   # 后复权
+            "2": "qfq",   # 前复权
             "3": "",      # 不复权
         }
-        adjust = adjust_map.get(adjustflag, "qfq")
+        adjust = adjust_map.get(adjustflag, "hfq")
 
         try:
             df = ak.stock_zh_a_hist(
@@ -119,8 +119,12 @@ class AkShareDataSource(BaseDataSource):
             for col in ["open", "high", "low", "close", "volume", "turnover"]:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
 
+            # 东方财富成交量单位为手，统一换算为股。
+            df["volume"] = df["volume"] * 100
+
             df = df.dropna(subset=["close"])
             df = df[df["volume"] > 0]
+            df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
             df = df.sort_values("date")
             df = df[["symbol", "date", "open", "high", "low", "close", "volume", "turnover"]]
 
