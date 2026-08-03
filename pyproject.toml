@@ -11,6 +11,7 @@ dependencies = [
     "pandas>=2.0",
     "requests>=2.31",
     "tqdm>=4.66",
+    "tomli>=2.0; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +32,8 @@ wind = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
 
 [tool.mypy]
@@ -54,9 +57,27 @@ ma_long = 20                   # 长期均线
 volume_ratio = 1.5             # 放量倍数
 
 [tool.stockradar.strategy.high_tight_flag]
+momentum_days = 40             # 强动量观察窗口
+momentum_ratio = 0.6           # 区间涨幅下限
 flag_days = 10                 # 旗形整理天数
-tight_ratio = 0.3              # 振幅收缩比例
+tight_ratio = 0.15             # 旗形区间最大振幅
+high_level_ratio = 0.8         # 整理区最低价/动量区最高价
+volume_window = 20             # 历史均量窗口
+volume_ratio = 0.6             # 当日量/历史均量上限
+
+[tool.stockradar.strategy.limit_up_shakeout]
+volume_ratio = 2.0             # 当日成交量/昨日成交量
+
+[tool.stockradar.strategy.uptrend_limit_down]
+ma_short = 20                  # 短期趋势均线
+ma_long = 60                   # 长期趋势均线
+volume_window = 20             # 均量窗口
+volume_ratio = 2.0             # 放量倍数
 
 [tool.stockradar.strategy.rps_breakout]
 rps_period = 120               # RPS 计算周期
 rps_threshold = 85             # RPS 强度阈值
+breakout_ratio = 0.9           # 收盘价/周期最高价下限
+
+[tool.stockradar.strategy.private_placement]
+lookback_days = 7              # 定增发行日期回看天数

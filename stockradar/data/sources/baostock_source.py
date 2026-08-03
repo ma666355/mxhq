@@ -205,12 +205,13 @@ class BaostockDataSource(BaseDataSource):
             self.connect()
 
         mapping: dict[str, str] = {}
+        requested = set(symbols)
         try:
-            for symbol in symbols:
-                bs_code = self.to_internal_code(symbol)
-                rs = bs.query_stock_basic(code=bs_code)
-                while rs.next():
-                    row = rs.get_row_data()
+            rs = bs.query_stock_basic(code_name="", code="")
+            while rs.next():
+                row = rs.get_row_data()
+                symbol = row[0].split(".")[-1]
+                if symbol in requested:
                     mapping[symbol] = row[1]
         except Exception:
             pass

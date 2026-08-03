@@ -7,14 +7,11 @@
 import importlib
 import pkgutil
 from pathlib import Path
-from typing import Type
 
-from stockradar.data.sources.base import BaseDataSource
-
-# 手动导出自定义子类
-from stockradar.data.sources.baostock_source import BaostockDataSource
-from stockradar.data.sources.tushare_source import TushareDataSource
 from stockradar.data.sources.akshare_source import AkShareDataSource
+from stockradar.data.sources.baostock_source import BaostockDataSource
+from stockradar.data.sources.base import BaseDataSource
+from stockradar.data.sources.tushare_source import TushareDataSource
 from stockradar.data.sources.wind_source import WindDataSource
 
 __all__ = [
@@ -28,7 +25,7 @@ __all__ = [
 ]
 
 
-def discover_sources() -> dict[str, Type[BaseDataSource]]:
+def discover_sources() -> dict[str, type[BaseDataSource]]:
     """自动扫描 sources/ 下所有模块，发现 BaseDataSource 子类。
 
     返回 {name: class} 映射，其中 name 取自类的 name 属性。
@@ -37,7 +34,7 @@ def discover_sources() -> dict[str, Type[BaseDataSource]]:
     Returns:
         数据源名称到类的映射字典。
     """
-    registry: dict[str, Type[BaseDataSource]] = {}
+    registry: dict[str, type[BaseDataSource]] = {}
     package_dir = Path(__file__).parent
 
     for module_info in pkgutil.iter_modules([str(package_dir)]):

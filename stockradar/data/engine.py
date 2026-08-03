@@ -38,6 +38,20 @@ _CREATE_INDEX_SQL = """
 CREATE INDEX IF NOT EXISTS idx_symbol_date ON stock_daily (symbol, date);
 """
 
+_UPSERT_SQL = """
+INSERT INTO stock_daily (
+    symbol, date, open, high, low, close, volume, turnover
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(symbol, date) DO UPDATE SET
+    open = excluded.open,
+    high = excluded.high,
+    low = excluded.low,
+    close = excluded.close,
+    volume = excluded.volume,
+    turnover = excluded.turnover;
+"""
+
 
 class DataEngine:
     """行情数据引擎，负责 SQLite 存储和多数据源数据同步。
@@ -52,6 +66,7 @@ class DataEngine:
         self.db_path: str = settings.db_path
         self.start_date: str = settings.start_date
         self.source: BaseDataSource = data_source
+        self._stock_name_cache: dict[str, str] = {}
         self._init_db()
 
     # ── 数据库初始化 ──
@@ -84,6 +99,45 @@ class DataEngine:
                 params=(symbol,),
             )
         return df
+
+    def _upsert_dataframe(self, df: pd.DataFrame) -> int:
+        """按 ``(symbol, date)`` 原子更新行情，避免覆盖其他股票的数据。"""
+        columns = [
+            "symbol", "date", "open", "high", "low",
+            "close", "volume", "turnover",
+        ]
+        if df.empty:
+            return 0
+
+        clean = df.reindex(columns=columns).copy()
+        clean["date"] = pd.to_datetime(clean["date"], errors="coerce").dt.strftime(
+            "%Y-%m-%d"
+        )
+        for col in ["open", "high", "low", "close", "volume", "turnover"]:
+            clean[col] = pd.to_numeric(clean[col], errors="coerce")
+
+        clean = clean.dropna(subset=["symbol", "date", "close"])
+        clean = clean[clean["volume"] > 0]
+        clean["symbol"] = clean["symbol"].astype(str)
+
+        rows = [
+            tuple(
+                None
+                if pd.isna(value)
+                else value.item()
+                if hasattr(value, "item")
+                else value
+                for value in row
+            )
+            for row in clean.itertuples(index=False, name=None)
+        ]
+        if not rows:
+            return 0
+
+        with sqlite3.connect(self.db_path) as conn:
+            conn.executemany(_UPSERT_SQL, rows)
+            conn.commit()
+        return len(rows)
 
     # ── 数据同步 ──
 
@@ -143,20 +197,7 @@ class DataEngine:
                 "close", "volume", "turnover",
             ],
         )
-        for col in ["open", "high", "low", "close", "volume", "turnover"]:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-        df = df.dropna(subset=["close"])
-        df = df[df["volume"] > 0]
-
-        count = len(df)
-        with sqlite3.connect(self.db_path) as conn:
-            for d in df["date"].unique().tolist():
-                conn.execute("DELETE FROM stock_daily WHERE date = ?", (d,))
-            df.to_sql(
-                "stock_daily", conn, if_exists="append",
-                index=False, method="multi", chunksize=500,
-            )
-            conn.commit()
+        count = self._upsert_dataframe(df)
 
         logger.info(f"sync_today_bulk: 写入 {count} 条数据")
         return count
@@ -279,13 +320,21 @@ class DataEngine:
 
                 # 写入数据库
                 try:
-                    with sqlite3.connect(self.db_path) as conn:
-                        df.to_sql(
-                            "stock_daily", conn, if_exists="append",
-                            index=False, method="multi", chunksize=500,
-                        )
-                except sqlite3.IntegrityError:
-                    pass
+                    written = self._upsert_dataframe(df)
+                except sqlite3.DatabaseError as exc:
+                    failed += 1
+                    pbar.write(f"[{symbol}] 数据库写入失败: {exc}")
+                    pbar.set_postfix({
+                        "成功": success, "跳过": skipped, "失败": failed,
+                    })
+                    continue
+
+                if written == 0:
+                    skipped += 1
+                    pbar.set_postfix({
+                        "成功": success, "跳过": skipped, "失败": failed,
+                    })
+                    continue
 
                 success += 1
                 pbar.set_postfix({
@@ -317,3 +366,18 @@ class DataEngine:
                 "SELECT DISTINCT symbol FROM stock_daily"
             ).fetchall()
         return [row[0] for row in rows]
+
+    def get_stock_names(self, symbols: list[str]) -> dict[str, str]:
+        """批量读取股票名称，并在一次运行期间缓存结果。"""
+        missing = [
+            symbol for symbol in symbols
+            if symbol not in self._stock_name_cache
+        ]
+        if missing:
+            fetched = self.source.get_stock_names(missing)
+            for symbol in missing:
+                self._stock_name_cache[symbol] = fetched.get(symbol, symbol)
+        return {
+            symbol: self._stock_name_cache[symbol]
+            for symbol in symbols
+        }

@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import time
+from typing import Any
 
 import pandas as pd
 
@@ -31,7 +32,7 @@ class TushareDataSource(BaseDataSource):
 
     def __init__(self, token: str = "") -> None:
         self.token: str = token
-        self._api = None
+        self._api: Any = None
 
     # ── 连接管理 ──
 
@@ -126,21 +127,34 @@ class TushareDataSource(BaseDataSource):
             if df.empty:
                 return pd.DataFrame()
 
-            # 2. 复权因子（如果需要后复权）
-            if adjustflag == "1":
+            # 2. 复权因子：1=后复权，2=前复权，3=不复权
+            if adjustflag in ("1", "2"):
                 time.sleep(0.3)  # tushare 免费用户频次限制
                 adj_df = self._api.adj_factor(
                     ts_code=ts_code,
                     start_date=start,
                     end_date=end,
                 )
-                if not adj_df.empty:
-                    df = df.merge(adj_df, on="trade_date", how="left")
-                    for col in ["open", "high", "low", "close"]:
-                        df[col] = df[col] * df["adj_factor"]
-                    # 成交额也需要等比缩放
-                    if "amount" in df.columns:
-                        df["amount"] = df["amount"] * df["adj_factor"]
+                if adj_df.empty:
+                    logger.warning(f"[tushare] {symbol} 复权因子为空")
+                    return pd.DataFrame()
+                df = df.merge(adj_df, on="trade_date", how="left")
+                df["adj_factor"] = pd.to_numeric(
+                    df["adj_factor"], errors="coerce"
+                )
+                if adjustflag == "1":
+                    price_factor = df["adj_factor"]
+                else:
+                    valid_factors = df.dropna(subset=["adj_factor"])
+                    if valid_factors.empty:
+                        return pd.DataFrame()
+                    latest_row = valid_factors.sort_values(
+                        "trade_date"
+                    ).iloc[-1]
+                    latest_factor = latest_row["adj_factor"]
+                    price_factor = df["adj_factor"] / latest_factor
+                for col in ["open", "high", "low", "close"]:
+                    df[col] = df[col] * price_factor
 
             df = df.rename(columns={
                 "trade_date": "date",
@@ -152,6 +166,10 @@ class TushareDataSource(BaseDataSource):
             # 类型转换
             for col in ["open", "high", "low", "close", "volume", "turnover"]:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
+
+            # Tushare 日线单位：成交量=手、成交额=千元；统一为股、元。
+            df["volume"] = df["volume"] * 100
+            df["turnover"] = df["turnover"] * 1_000
 
             df = df.dropna(subset=["close"])
             df = df[df["volume"] > 0]
@@ -213,13 +231,14 @@ class TushareDataSource(BaseDataSource):
             if not self.connect():
                 return {}
 
-        ts_codes = ",".join(self.to_internal_code(s) for s in symbols)
         try:
             df = self._api.stock_basic(
-                ts_code=ts_codes,
+                exchange="",
+                list_status="L",
                 fields="symbol,name",
             )
             if not df.empty:
+                df = df[df["symbol"].isin(symbols)]
                 return dict(zip(df["symbol"], df["name"]))
         except Exception:
             pass

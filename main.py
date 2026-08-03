@@ -8,14 +8,10 @@
 """
 
 import argparse
-import sys
 import socket
+import sys
 
 from dotenv import load_dotenv
-
-load_dotenv()
-
-socket.setdefaulttimeout(10.0)
 
 from stockradar.core.config import get_settings
 from stockradar.core.logger import get_logger
@@ -26,6 +22,9 @@ from stockradar.strategy import discover_strategies
 
 
 def main() -> None:
+    load_dotenv()
+    socket.setdefaulttimeout(10.0)
+
     parser = argparse.ArgumentParser(description="StockRadar 选股系统")
     parser.add_argument(
         "--backfill",
